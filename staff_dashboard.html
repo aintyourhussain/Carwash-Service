@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-2xl font-semibold text-gray-900">Admin / Staff Dashboard</h2>
+    <p class="text-gray-600 text-sm mt-1">Manage bookings, stages, payments, staff and packages.</p>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="bg-white border border-gray-200 rounded-xl shadow-sm">
+  <div class="border-b border-gray-200">
+    <div class="flex gap-2 p-2">
+      <button class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white" onclick="showTab('tabActive')">Active Bookings</button>
+      <button class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100" onclick="showTab('tabAssign')">Assign Staff</button>
+      <button class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100" onclick="showTab('tabPackages')">Packages</button>
+      <button class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100" onclick="showTab('tabUsers')">Users</button>
+    </div>
+  </div>
+
+  <!-- TAB: Active Bookings -->
+  
+
+  <div id="tabActive" class="p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900">Active / In Progress</h3>
+      <span class="text-sm text-gray-500">Total: {{ active|length }}</span>
+    </div>
+
+    <div class="overflow-x-auto border border-gray-200 rounded-lg">
+      <table class="min-w-full">
+  <thead class="bg-gray-50">
+    <tr>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">ID</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Time</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Customer</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Vehicle</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Package</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Status</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Stage</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">History</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Update Stage</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Payment</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Details</th>
+    </tr>
+  </thead>
+
+  <tbody class="divide-y divide-gray-100">
+    {% for a in active %}
+    <tr class="hover:bg-gray-50 align-top">
+      <td class="px-4 py-4 text-sm text-gray-900 font-medium">#{{ a[0] }}</td>
+      <td class="px-4 py-4 text-sm text-gray-700">{{ a[1] }}</td>
+      <td class="px-4 py-4 text-sm text-gray-900">{{ a[3] }}</td>
+      <td class="px-4 py-4 text-sm text-gray-900">{{ a[4] }}</td>
+      <td class="px-4 py-4 text-sm text-gray-900">{{ a[5] }}</td>
+
+      <td class="px-4 py-4">
+        <span class="px-2 py-1 rounded-full text-xs
+          {% if a[2]=='Completed' %} bg-green-100 text-green-800
+          {% elif a[2]=='InProgress' %} bg-blue-100 text-blue-800
+          {% elif a[2]=='Booked' %} bg-yellow-100 text-yellow-800
+          {% else %} bg-red-100 text-red-800 {% endif %}">
+          {{ a[2] }}
+        </span>
+      </td>
+
+      <td class="px-4 py-4 text-sm text-gray-900">{{ a[6] or '-' }}</td>
+
+      <!-- ✅ HISTORY -->
+      <td class="px-4 py-4 align-top">
+        {% set hist = history_map.get(a[0], []) %}
+        {% if hist %}
+          <div class="text-xs text-gray-700 space-y-1 max-w-xs">
+            {% for h in hist %}
+              <div class="bg-gray-50 border border-gray-200 rounded-md px-2 py-1">
+                <b>{{ h[0] }}</b> • {{ h[1] }}
+                {% if h[2] %} → {{ h[2] }}{% endif %}
+                <div class="text-[11px] text-gray-500">by {{ h[3] }}</div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <span class="text-xs text-gray-500">No history</span>
+        {% endif %}
+      </td>
+
+      <td class="px-4 py-4">
+        <form method="post" action="{{ url_for('staff_update_stage', booking_id=a[0]) }}" class="space-y-2">
+          <select name="stage_id" required
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            {% for s in stages %}
+              <option value="{{ s[0] }}">{{ s[1] }}</option>
+            {% endfor %}
+          </select>
+          <label class="flex items-center gap-2 text-xs text-gray-600">
+            <input type="checkbox" name="end_prev" checked class="rounded">
+            End previous stage
+          </label>
+          <button class="w-full bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700 transition">
+            Update
+          </button>
+        </form>
+      </td>
+
+      <td class="px-4 py-4">
+        <form method="post" action="{{ url_for('staff_update_payment', booking_id=a[0]) }}" class="space-y-2">
+          <select name="method"
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <option>Cash</option>
+            <option>Card</option>
+            <option>Online</option>
+          </select>
+          <select name="payment_status"
+                  class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <option>Unpaid</option>
+            <option>Paid</option>
+            <option>Partial</option>
+            <option>Refunded</option>
+          </select>
+          <button class="w-full border border-gray-300 py-2 rounded-lg text-sm hover:bg-gray-50 transition">
+            Save
+          </button>
+        </form>
+      </td>
+
+      <td class="px-4 py-4">
+        <a href="{{ url_for('booking_detail', booking_id=a[0]) }}"
+           class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+          View
+        </a>
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="11" class="px-4 py-6 text-sm text-gray-600">No active bookings.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+    </div>
+  </div>
+
+  <!-- TAB: Assign Staff -->
+  <div id="tabAssign" class="p-6 hidden">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Assign Staff to Booking</h3>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="border border-gray-200 rounded-xl p-5">
+        <form method="post" action="{{ url_for('staff_assign') }}" class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-700 mb-2">Select Booking</label>
+            <select name="booking_id" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              {% for b in all_bookings %}
+                <option value="{{ b[0] }}">#{{ b[0] }} | {{ b[2] }} | {{ b[3] }} | {{ b[4] }} | {{ b[1] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm text-gray-700 mb-2">Select Staff (multi)</label>
+            <select name="staff_ids" multiple size="6" required
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              {% for u in staff_users %}
+                <option value="{{ u[0] }}">{{ u[1] }} ({{ u[2] }})</option>
+              {% endfor %}
+            </select>
+            <p class="text-xs text-gray-500 mt-2">Tip: Hold Cmd (Mac) to select multiple.</p>
+          </div>
+
+          <button class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">
+            Assign Staff
+          </button>
+        </form>
+      </div>
+
+      <div class="border border-gray-200 rounded-xl p-5 bg-gray-50">
+        <h4 class="text-sm font-semibold text-gray-800 mb-2">How it works</h4>
+        <ul class="text-sm text-gray-600 list-disc pl-5 space-y-1">
+          <li>A booking can have multiple staff members.</li>
+          <li>Assignments are stored in a bridge table (M:N).</li>
+          <li>Use Booking Details page to confirm assigned staff.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Packages -->
+  <div id="tabPackages" class="p-6 hidden">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900">Manage Packages</h3>
+      <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              onclick="openDialog('packageDialog')">
+        + Add Package
+      </button>
+    </div>
+
+    <div class="overflow-x-auto border border-gray-200 rounded-lg">
+      <table class="min-w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">ID</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Name</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Price</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Duration</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Active</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-600">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for p in packages %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-4 py-4 text-sm text-gray-900">#{{ p[0] }}</td>
+            <td class="px-4 py-4 text-sm text-gray-900 font-medium">{{ p[1] }}</td>
+            <td class="px-4 py-4 text-sm text-gray-900">Rs {{ p[2] }}</td>
+            <td class="px-4 py-4 text-sm text-gray-900">{{ p[3] }} min</td>
+            <td class="px-4 py-4">
+              <span class="px-2 py-1 rounded-full text-xs {{ 'bg-green-100 text-green-800' if p[4]==1 else 'bg-gray-100 text-gray-700' }}">
+                {{ 'Yes' if p[4]==1 else 'No' }}
+              </span>
+            </td>
+            <td class="px-4 py-4">
+              <form method="post" action="{{ url_for('toggle_package', package_id=p[0]) }}">
+                <button class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50">
+                  {{ 'Deactivate' if p[4]==1 else 'Activate' }}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="px-4 py-6 text-sm text-gray-600">No packages found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Add Package Modal -->
+    <dialog id="packageDialog" class="rounded-xl w-full max-w-md p-0">
+      <div class="bg-white p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl font-semibold text-gray-900">Add Package</h3>
+          <button onclick="closeDialog('packageDialog')" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+        </div>
+
+        <form method="post" action="{{ url_for('create_package') }}" class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-700 mb-2">Package Name</label>
+            <input name="package_name" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm text-gray-700 mb-2">Price</label>
+              <input name="price" type="number" step="0.01" required
+                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-700 mb-2">Duration (min)</label>
+              <input name="duration_minutes" type="number" required
+                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+
+          <label class="flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" name="is_active" checked class="rounded">
+            Active
+          </label>
+
+          <div class="flex gap-3">
+            <button class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">
+              Create
+            </button>
+            <button type="button" onclick="closeDialog('packageDialog')" class="flex-1 border border-gray-300 py-3 rounded-lg hover:bg-gray-50 transition">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+  </div>
+
+  <!-- TAB: Users -->
+  <div id="tabUsers" class="p-6 hidden">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900">Create Staff / Admin User</h3>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="border border-gray-200 rounded-xl p-5">
+        <form method="post" action="{{ url_for('create_staff_user') }}" class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-700 mb-2">Full Name</label>
+            <input name="full_name" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div>
+            <label class="block text-sm text-gray-700 mb-2">Phone (unique)</label>
+            <input name="phone" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div>
+            <label class="block text-sm text-gray-700 mb-2">Email (optional)</label>
+            <input name="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm text-gray-700 mb-2">Role</label>
+              <select name="role" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option>Staff</option>
+                <option>Admin</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm text-gray-700 mb-2">Password</label>
+              <input name="password" type="password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+
+          <button class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">
+            Create User
+          </button>
+        </form>
+      </div>
+
+      <div class="border border-gray-200 rounded-xl p-5 bg-gray-50">
+        <h4 class="text-sm font-semibold text-gray-800 mb-2">Existing Staff/Admin</h4>
+        <div class="space-y-2">
+          {% for u in staff_users %}
+            <div class="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3">
+              <div>
+                <div class="text-sm text-gray-900 font-medium">{{ u[1] }}</div>
+                <div class="text-xs text-gray-500">Role: {{ u[2] }}</div>
+              </div>
+              <div class="text-gray-400">👤</div>
+            </div>
+          {% else %}
+            <div class="text-sm text-gray-600">No staff users found.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openDialog(id){ document.getElementById(id).showModal(); }
+  function closeDialog(id){ document.getElementById(id).close(); }
+
+  function showTab(tabId){
+    const tabs = ['tabActive','tabAssign','tabPackages','tabUsers'];
+    for (const t of tabs){
+      const el = document.getElementById(t);
+      el.classList.add('hidden');
+    }
+    document.getElementById(tabId).classList.remove('hidden');
+
+    // Update tab button styles
+    const btns = document.querySelectorAll('.border-b .flex button');
+    btns.forEach(b => {
+      b.classList.remove('bg-blue-600','text-white');
+      b.classList.add('text-gray-700');
+    });
+
+    // mark clicked button active (based on onclick)
+    const activeBtn = Array.from(btns).find(b => b.getAttribute('onclick')?.includes(tabId));
+    if (activeBtn){
+      activeBtn.classList.add('bg-blue-600','text-white');
+      activeBtn.classList.remove('text-gray-700');
+    }
+  }
+</script>
+{% endblock %}

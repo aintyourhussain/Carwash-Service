@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+  <!-- My Vehicles -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-semibold text-gray-900">My Vehicles</h2>
+      <button onclick="openDialog('vehicleDialog')"
+              class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+        + Add Vehicle
+      </button>
+    </div>
+
+    <div class="space-y-3">
+      {% for v in vehicles %}
+        <div class="p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-900 font-medium">{{ v[1] }}</p>
+              <p class="text-sm text-gray-600">{{ v[5] or '-' }} • {{ v[4] or '-' }}</p>
+            </div>
+            <div class="text-gray-400 text-2xl">🚘</div>
+          </div>
+        </div>
+      {% else %}
+        <div class="text-gray-600 text-sm">No vehicles yet. Add one.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Create Booking -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-6">Create Booking</h2>
+    <button onclick="openDialog('bookingDialog')"
+            class="w-full py-12 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition flex flex-col items-center justify-center gap-3 text-gray-600 hover:text-blue-600">
+      <div class="text-3xl">+</div>
+      <span>Click to Create New Booking</span>
+    </button>
+  </div>
+</div>
+
+<!-- My Bookings -->
+<div class="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+  <h2 class="text-xl font-semibold text-gray-900 mb-6">My Bookings</h2>
+
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead>
+        <tr class="border-b border-gray-200">
+          <th class="text-left py-3 px-4 text-sm text-gray-600">ID</th>
+          <th class="text-left py-3 px-4 text-sm text-gray-600">Vehicle</th>
+          <th class="text-left py-3 px-4 text-sm text-gray-600">Package</th>
+          <th class="text-left py-3 px-4 text-sm text-gray-600">Status</th>
+          <th class="text-left py-3 px-4 text-sm text-gray-600">Stage</th>
+          <th class="text-left py-3 px-4 text-sm text-gray-600">History</th>
+          <th class="text-left py-3 px-4 text-sm text-gray-600">Action</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for b in bookings %}
+          <tr class="border-b border-gray-100 hover:bg-gray-50 align-top">
+            <td class="py-4 px-4 text-sm text-gray-900">#{{ b[0] }}</td>
+            <td class="py-4 px-4 text-sm text-gray-900">{{ b[3] }}</td>
+            <td class="py-4 px-4 text-sm text-gray-900">{{ b[4] }} (Rs {{ b[5] }})</td>
+
+            <td class="py-4 px-4">
+              <span class="px-2 py-1 rounded-full text-xs
+                {% if b[2]=='Completed' %} bg-green-100 text-green-800
+                {% elif b[2]=='InProgress' %} bg-blue-100 text-blue-800
+                {% elif b[2]=='Booked' %} bg-yellow-100 text-yellow-800
+                {% else %} bg-red-100 text-red-800 {% endif %}">
+                {{ b[2] }}
+              </span>
+            </td>
+
+            <td class="py-4 px-4 text-sm text-gray-900">{{ b[6] or '-' }}</td>
+
+            <!-- ✅ HISTORY CELL -->
+            <td class="py-4 px-4">
+              {% set hist = cust_history_map.get(b[0], []) %}
+              {% if hist %}
+                <div class="text-xs text-gray-700 space-y-1">
+                  {% for h in hist %}
+                    <div class="bg-gray-50 border border-gray-200 rounded-md px-2 py-1">
+                      <b>{{ h[0] }}</b> • {{ h[1] }}
+                      {% if h[2] %} → {{ h[2] }}{% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <span class="text-xs text-gray-500">Not started</span>
+              {% endif %}
+            </td>
+
+            <td class="py-4 px-4">
+              <a class="text-blue-600 hover:text-blue-700 text-sm"
+                 href="{{ url_for('booking_detail', booking_id=b[0]) }}">
+                 View Details
+              </a>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td class="py-4 px-4 text-sm text-gray-600" colspan="7">No bookings yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Vehicle Modal -->
+<dialog id="vehicleDialog" class="rounded-xl w-full max-w-md p-0">
+  <div class="bg-white p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-semibold text-gray-900">Add Vehicle</h3>
+      <button onclick="closeDialog('vehicleDialog')" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+    </div>
+
+    <form method="post" action="{{ url_for('add_vehicle') }}" class="space-y-4">
+      <div>
+        <label class="block text-sm text-gray-700 mb-2">Plate Number</label>
+        <input name="plate_no" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="ABC-1234">
+      </div>
+
+      <div>
+        <label class="block text-sm text-gray-700 mb-2">Vehicle Type</label>
+        <input name="vehicle_type" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Sedan/SUV">
+      </div>
+
+      <div>
+        <label class="block text-sm text-gray-700 mb-2">Color</label>
+        <input name="color" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Black">
+      </div>
+
+      <div class="flex gap-3">
+        <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">
+          Save
+        </button>
+        <button type="button" onclick="closeDialog('vehicleDialog')" class="flex-1 border border-gray-300 py-3 rounded-lg hover:bg-gray-50 transition">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<!-- Create Booking Modal -->
+<dialog id="bookingDialog" class="rounded-xl w-full max-w-md p-0">
+  <div class="bg-white p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-semibold text-gray-900">Create Booking</h3>
+      <button onclick="closeDialog('bookingDialog')" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+    </div>
+
+    <form method="post" action="{{ url_for('create_booking') }}" class="space-y-4">
+      <div>
+        <label class="block text-sm text-gray-700 mb-2">Vehicle</label>
+        <select name="vehicle_id" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          {% for v in vehicles %}
+            <option value="{{ v[0] }}">{{ v[1] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm text-gray-700 mb-2">Package</label>
+        <select name="package_id" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          {% for p in packages %}
+            <option value="{{ p[0] }}">{{ p[1] }} - Rs {{ p[2] }} ({{ p[3] }} min)</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm text-gray-700 mb-2">Scheduled DateTime (optional)</label>
+        <input type="datetime-local" name="scheduled_datetime" min="{{ now_min }}"
+               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div>
+        <label class="block text-sm text-gray-700 mb-2">Notes (optional)</label>
+        <textarea name="notes" rows="2"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+      </div>
+
+      <div class="flex gap-3">
+        <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">
+          Create
+        </button>
+        <button type="button" onclick="closeDialog('bookingDialog')" class="flex-1 border border-gray-300 py-3 rounded-lg hover:bg-gray-50 transition">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openDialog(id){ document.getElementById(id).showModal(); }
+  function closeDialog(id){ document.getElementById(id).close(); }
+</script>
+{% endblock %}

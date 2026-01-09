@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Car Wash Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50">
+  <!-- Top Nav -->
+  <nav class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span class="text-white font-bold">CW</span>
+          </div>
+          <h1 class="text-xl text-gray-900 font-semibold">Car Wash Pro</h1>
+        </div>
+
+        <div class="flex items-center gap-4">
+          {% if session.get("user_id") %}
+            <span class="text-sm text-gray-600">
+              Welcome, {{ session.get("full_name") }} ({{ session.get("role") }})
+            </span>
+            <a href="{{ url_for('logout') }}"
+               class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
+              Logout
+            </a>
+          {% else %}
+            <a href="{{ url_for('login') }}" class="text-blue-600 hover:text-blue-700">Login</a>
+            <a href="{{ url_for('register') }}" class="text-blue-600 hover:text-blue-700">Register</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash messages -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% if msgs %}
+        {% for cat, msg in msgs %}
+          {% set cls = "bg-gray-100 text-gray-800 border-gray-200" %}
+          {% if cat == "success" %}{% set cls="bg-green-50 text-green-800 border-green-200" %}{% endif %}
+          {% if cat == "danger" %}{% set cls="bg-red-50 text-red-800 border-red-200" %}{% endif %}
+          {% if cat == "info" %}{% set cls="bg-blue-50 text-blue-800 border-blue-200" %}{% endif %}
+
+          <div class="border {{ cls }} rounded-lg px-4 py-3 mb-3">
+            {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Page content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>
